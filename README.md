@@ -54,17 +54,18 @@ Let's see if I can use this anyway.
 I have this file called `weights.tar` that I got from my custom dreambooth trainer.  And I have a "cog token" from https://replicate.com/auth/token
 
 
-    ./r8-affix --token $REPLICATE_COG_TOKEN \
-      --base "r8.im/anotherjesse/dreambooth-template@sha256:d0b01c9e0d4bc94c8d642064b349261c0d5147a784dab8011c0adb77fe0b27d3 \
+    ./r8 affix --token $REPLICATE_COG_TOKEN \
+      --base "r8.im/replicate/dreambooth-template@sha256:d0b01c9e0d4bc94c8d642064b349261c0d5147a784dab8011c0adb77fe0b27d3 \
       --dest "r8.im/anotherjesse/my-dreambooths" \
       --tar "weights.tar"
       
-    fetching metadata for r8.im/anotherjesse/dreambooth-template@sha256:d0b01c9e0d4bc94c8d642064b349261c0d5147a784dab8011c0adb77fe0b27d3
-    pulling took 342.542339ms
-    appending as new layer weights.tar
-    appending took 12.111912s
-    pushing took 1.438725092s
-    r8.im/anotherjesse/my-dreambooths@sha256:71e5b377ce8f1f928252328066a72a2b7e4a37281529dd3a4dcfe6b3c85cd93a
+    fetching metadata for r8.im/replicate/dreambooth-template@sha256:d0b01c9e0d4bc94c8d642064b349261c0d5147a784dab8011c0adb77fe0b27d3
+    pulling took 325.867939ms
+    appending as new layer /home/jesse/output.tar
+    appending took 29.523629917s
+    pushing took 18.92398947s
+    r8.im/anotherjesse/faster@sha256:f5406d243df29db34ea441401141bf7f0f79da679651f110871a78d37c897c73
+
 
 yay, it looks like I have a new version of `my-dreambooths` that added my weights on top of my template
 
