@@ -52,3 +52,5 @@ func Affix(baseRef string, dest string, newLayer string, auth authn.Authenticato
 	image_id := fmt.Sprintf("%s@%s", dest, d)
 	return image_id, nil
 }
+
+// FIXME(ja): the mediatypes of layers are tar.gzip? does that mean we should create weights as tar.gzip to go faster?
