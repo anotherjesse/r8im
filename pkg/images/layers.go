@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -13,10 +14,12 @@ type Layer struct {
 	Digest    string
 	MediaType string
 	Size      int64
-	// FIXME(ja): can we get the command or annotations?
+	Command   string
 }
 
 func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
+	results := make([]Layer, 0)
+
 	var base v1.Image
 	var err error
 
@@ -33,8 +36,6 @@ func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting layers %w", err)
 	}
-
-	results := make([]Layer, 0)
 
 	for _, layer := range layers {
 		digest, err := layer.Digest()
@@ -58,10 +59,25 @@ func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
 		})
 	}
 
+	// Grab the commands from the history
+	cfg, nil := base.ConfigFile()
+	if err != nil {
+		return results, fmt.Errorf("getting config %w", err)
+	}
+	idx := 0
+	for _, h := range cfg.History {
+		if h.EmptyLayer {
+			continue
+		}
+
+		s := strings.TrimPrefix(h.CreatedBy, "/bin/sh -c ")
+		s = strings.TrimPrefix(s, "#(nop) ")
+		if len(s) > 40 {
+			s = s[:40]
+		}
+		results[idx].Command = s
+		idx++
+	}
+
 	return results, nil
 }
-
-// Tags:   (unavailable)                                                                                             -rw-r--r--         0:0     3.0 kB  │   ├── adduser.conf
-// Id:     ca3ced397349afdb5201203e65af600910f0af4b3d20c9d73e9e322e7ec77bfa                                          drwxr-xr-x         0:0      100 B  │   ├── alternatives
-// Digest: sha256:3e271fb25447b8677bb29b9eef44d0e0a83bfe31c05c92b3b4f6121d58e8448c                                   -rw-r--r--         0:0      100 B  │   │   ├── README
-// Command:                                                                                                          -rwxrwxrwx         0:0        0 B  │   │   ├── awk → /usr/bin/mawk
