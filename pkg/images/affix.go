@@ -54,3 +54,4 @@ func Affix(baseRef string, dest string, newLayer string, auth authn.Authenticato
 }
 
 // FIXME(ja): the mediatypes of layers are tar.gzip? does that mean we should create weights as tar.gzip to go faster?
+// FIXME(ja): can we add some history to the image? (e.g. the command that was used to add the layer)
