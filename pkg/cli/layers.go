@@ -11,10 +11,6 @@ import (
 	"github.com/replicate/r8/pkg/images"
 )
 
-// var (
-// 	sToken string
-// )
-
 func newLayerCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "layers [image]",
@@ -26,12 +22,14 @@ func newLayerCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&sToken, "token", "t", "", "replicate cog token")
-	cmd.MarkFlagRequired("token")
 
 	return cmd
 }
 
 func layersCommmand(cmd *cobra.Command, args []string) error {
+	if sToken == "" {
+		sToken = os.Getenv("COG_TOKEN")
+	}
 
 	if len(args) == 0 {
 		return nil

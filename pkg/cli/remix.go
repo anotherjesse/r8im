@@ -25,12 +25,14 @@ func newRemixCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&sToken, "token", "t", "", "replicate cog token")
-	cmd.MarkFlagRequired("token")
 
 	return cmd
 }
 
 func remixCommmand(cmd *cobra.Command, args []string) error {
+	if sToken == "" {
+		sToken = os.Getenv("COG_TOKEN")
+	}
 
 	u, err := auth.VerifyCogToken(sRegistry, sToken)
 	if err != nil {

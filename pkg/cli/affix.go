@@ -28,7 +28,6 @@ func newAffixCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&sToken, "token", "t", "", "replicate cog token")
-	cmd.MarkFlagRequired("token")
 	cmd.Flags().StringVarP(&sRegistry, "registry", "r", "r8.im", "registry host")
 	cmd.Flags().StringVarP(&baseRef, "base", "b", "", "base image reference - include tag: r8.im/username/modelname@sha256:hexdigest")
 	cmd.MarkFlagRequired("base")
@@ -42,6 +41,9 @@ func newAffixCommand() *cobra.Command {
 }
 
 func affixCommmand(cmd *cobra.Command, args []string) error {
+	if sToken == "" {
+		sToken = os.Getenv("COG_TOKEN")
+	}
 
 	u, err := auth.VerifyCogToken(sRegistry, sToken)
 	if err != nil {
