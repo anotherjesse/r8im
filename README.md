@@ -1,4 +1,4 @@
-# r8 affix
+# r8im affix
 
 - doesn't require or use docker / containers
 - works with image registry directly
@@ -33,7 +33,7 @@ It lets me talk to replicate's image registry - and tweak and image without the 
 
 Let see, how can I use it?
 
-    $ ./r8-affex --help
+    $ ./r8im affix --help
     
     Usage of ./r8-affix:
       -base string
@@ -54,7 +54,7 @@ Let's see if I can use this anyway.
 I have this file called `weights.tar` that I got from my custom dreambooth trainer.  And I have a "cog token" from https://replicate.com/auth/token
 
 
-    ./r8 affix --token $REPLICATE_COG_TOKEN \
+    ./r8im affix --token $REPLICATE_COG_TOKEN \
       --base "r8.im/replicate/dreambooth-template@sha256:d0b01c9e0d4bc94c8d642064b349261c0d5147a784dab8011c0adb77fe0b27d3 \
       --dest "r8.im/anotherjesse/my-dreambooths" \
       --tar "weights.tar"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/replicate/r8/pkg/cli"
+	"github.com/anotherjesse/r8im/pkg/cli"
 )
 
 func main() {

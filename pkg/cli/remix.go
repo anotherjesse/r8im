@@ -7,8 +7,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/spf13/cobra"
 
-	"github.com/replicate/r8/pkg/auth"
-	"github.com/replicate/r8/pkg/images"
+	"github.com/anotherjesse/r8im/pkg/auth"
+	"github.com/anotherjesse/r8im/pkg/images"
 )
 
 // var (
