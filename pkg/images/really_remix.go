@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -10,39 +11,39 @@ import (
 )
 
 func ReallyRemix(baseRef string, weightsRef string, dest string, auth authn.Authenticator) (string, error) {
-	fmt.Println("fetching metadata for", weightsRef)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", weightsRef)
 	start := time.Now()
 	weightsImage, err := crane.Pull(weightsRef, crane.WithAuth(auth))
 	if err != nil {
 		return "", fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
-	fmt.Println("fetching metadata for", baseRef)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", baseRef)
 	start = time.Now()
 	baseImage, err := crane.Pull(baseRef, crane.WithAuth(auth))
 	if err != nil {
 		return "", fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
-	fmt.Println("finding weights layer")
+	fmt.Fprintln(os.Stderr, "finding weights layer")
 
 	start = time.Now()
 	weightsLayer, err := findWeightsLayer(weightsImage)
 	if err != nil {
 		return "", fmt.Errorf("getting layers %w", err)
 	}
-	fmt.Println("finding weights layer took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "finding weights layer took", time.Since(start))
 
 	start = time.Now()
 	mutant, err := appendLayers(baseImage, weightsLayer)
 	if err != nil {
 		return "", fmt.Errorf("appending layers %w", err)
 	}
-	fmt.Println("appending layers took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "appending layers took", time.Since(start))
 
-	fmt.Println("mutant image:", mutant)
+	fmt.Fprintln(os.Stderr, "mutant image:", mutant)
 
 	// --- pushing image
 
@@ -53,7 +54,7 @@ func ReallyRemix(baseRef string, weightsRef string, dest string, auth authn.Auth
 		return "", fmt.Errorf("pushing %s: %w", dest, err)
 	}
 
-	fmt.Println("pushing took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pushing took", time.Since(start))
 
 	return "mutant.hexdigest", nil
 }

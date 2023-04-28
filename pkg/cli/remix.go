@@ -49,7 +49,7 @@ func remixCommmand(cmd *cobra.Command, args []string) error {
 	}
 	auth := authn.FromConfig(authn.AuthConfig{Username: u, Password: sToken})
 
-	fmt.Println("remix time")
+	fmt.Fprintln(os.Stderr, "remix time")
 	url, err := images.ReallyRemix(baseRef, weightsRef, dest, auth)
 
 	fmt.Println(url)

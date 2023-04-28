@@ -21,25 +21,25 @@ func Affix(baseRef string, dest string, newLayer string, auth authn.Authenticato
 	var base v1.Image
 	var err error
 
-	fmt.Println("fetching metadata for", baseRef)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", baseRef)
 
 	start := time.Now()
 	base, err = crane.Pull(baseRef, crane.WithAuth(auth))
 	if err != nil {
 		return "", fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
 	// --- adding new layer ontop of existing image
 
-	fmt.Println("appending as new layer", newLayer)
+	fmt.Fprintln(os.Stderr, "appending as new layer", newLayer)
 
 	start = time.Now()
 	img, err := appendLayer(base, newLayer)
 	if err != nil {
 		return "", fmt.Errorf("appending %v: %w", newLayer, err)
 	}
-	fmt.Println("appending took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "appending took", time.Since(start))
 
 	// --- pushing image
 
@@ -50,7 +50,7 @@ func Affix(baseRef string, dest string, newLayer string, auth authn.Authenticato
 		return "", fmt.Errorf("pushing %s: %w", dest, err)
 	}
 
-	fmt.Println("pushing took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pushing took", time.Since(start))
 
 	d, err := img.Digest()
 	if err != nil {

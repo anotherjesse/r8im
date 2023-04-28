@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -18,26 +19,26 @@ func Remix(auth authn.Authenticator) error {
 
 	weights_image := "r8.im/anotherjesse/faster@sha256:2922cfb4febba1a72cacc9d407a726efe5a87ce32e2be5b4e5817209db87b7d1"
 
-	fmt.Println("fetching metadata for", weights_image)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", weights_image)
 	start := time.Now()
 	weights, err := crane.Pull(weights_image, crane.WithAuth(auth))
 	if err != nil {
 		return fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
 	base_image := "r8.im/anotherjesse/find@sha256:ef93356c06503ad651b7efe1ed705c58633826a0acfd664f50094eaac9829b79"
-	fmt.Println("fetching metadata for", base_image)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", base_image)
 	start = time.Now()
 	base, err = crane.Pull(base_image, crane.WithAuth(auth))
 	if err != nil {
 		return fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
 	weights_layer_id := "sha256:23a377230e377792bdfb5321e5d470140c405366daa9bd5aa7d1c6ff3bc6f772"
 
-	fmt.Println("finding layer", weights_layer_id)
+	fmt.Fprintln(os.Stderr, "finding layer", weights_layer_id)
 	layers, err := weights.Layers()
 	if err != nil {
 		return fmt.Errorf("getting layers %w", err)
@@ -59,8 +60,8 @@ func Remix(auth authn.Authenticator) error {
 	if err != nil {
 		return fmt.Errorf("appending layers %w", err)
 	}
-	fmt.Println("appending layers took", time.Since(start))
-	fmt.Println("mutant image:", mutant)
+	fmt.Fprintln(os.Stderr, "appending layers took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "mutant image:", mutant)
 
 	// --- pushing image
 
@@ -73,7 +74,7 @@ func Remix(auth authn.Authenticator) error {
 		return fmt.Errorf("pushing %s: %w", dest, err)
 	}
 
-	fmt.Println("pushing took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pushing took", time.Since(start))
 
 	// layers, err := base.Layers()
 	// if err != nil {

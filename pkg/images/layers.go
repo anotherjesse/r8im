@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ type Layer struct {
 	MediaType string
 	Size      int64
 	Command   string
+	Raw       v1.Layer
 }
 
 func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
@@ -23,14 +25,14 @@ func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
 	var base v1.Image
 	var err error
 
-	fmt.Println("fetching metadata for", imageName)
+	fmt.Fprintln(os.Stderr, "fetching metadata for", imageName)
 
 	start := time.Now()
 	base, err = crane.Pull(imageName, crane.WithAuth(auth))
 	if err != nil {
 		return nil, fmt.Errorf("pulling %w", err)
 	}
-	fmt.Println("pulling took", time.Since(start))
+	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
 	layers, err := base.Layers()
 	if err != nil {
@@ -56,6 +58,7 @@ func Layers(imageName string, auth authn.Authenticator) ([]Layer, error) {
 			Digest:    digest.String(),
 			Size:      size,
 			MediaType: string(mediatype),
+			Raw:       layer,
 		})
 	}
 
