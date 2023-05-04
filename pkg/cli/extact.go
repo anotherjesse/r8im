@@ -64,7 +64,9 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			return nil
+			if weightsFound {
+				return nil
+			}
 		}
 	}
 
@@ -80,7 +82,9 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return err
 			}
-			return nil
+			if weightsFound {
+				return nil
+			}
 		}
 	}
 
