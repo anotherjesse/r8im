@@ -51,20 +51,43 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	weightsFound := false
 	for _, layer := range layers {
 		// fmt.Println(layer.Command)
+		if strings.HasPrefix(layer.Command, "COPY . /src") {
+			l := layer.Raw
+			rc, err := l.Uncompressed()
+			if err != nil {
+				return err
+			}
+			weightsFound, err = r8Layers.ExtractTarWithoutPrefixAndIgnoreWhiteout(rc, dest)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+
+	for _, layer := range layers {
+		fmt.Println(layer.Command)
 		if strings.HasSuffix(layer.Command, " # weights") {
 			l := layer.Raw
 			rc, err := l.Uncompressed()
 			if err != nil {
 				return err
 			}
-			err = r8Layers.ExtractTarWithoutPrefix(rc, dest)
+			weightsFound, err = r8Layers.ExtractTarWithoutPrefixAndIgnoreWhiteout(rc, dest)
 			if err != nil {
 				return err
 			}
+			return nil
 		}
 	}
 
+	if !weightsFound {
+		return fmt.Errorf("no weights found")
+	}
+
 	return nil
+
 }

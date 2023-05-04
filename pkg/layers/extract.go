@@ -2,12 +2,13 @@ package layers
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 )
 
-func ExtractTarWithoutPrefix(r io.Reader, dest string) error {
+func ExtractTarWithoutPrefixAndIgnoreWhiteout(r io.Reader, dest string) (bool, error) {
 	var w io.Writer
 	var file *os.File
 
@@ -18,7 +19,7 @@ func ExtractTarWithoutPrefix(r io.Reader, dest string) error {
 		var err error
 		file, err = os.Create(dest)
 		if err != nil {
-			return err
+			return false, err
 		}
 		defer file.Close()
 		w = file
@@ -30,31 +31,42 @@ func ExtractTarWithoutPrefix(r io.Reader, dest string) error {
 
 	prefix := "src/weights/"
 
+	weightsFound := false
+
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return err
+			return weightsFound, err
+		}
+
+		// Ignore whiteout files
+		if strings.Contains(header.Name, ".wh..wh..") {
+			continue
 		}
 
 		// Check if the path has the desired prefix
-		if strings.HasPrefix(header.Name, prefix) {
+		if header.Typeflag == tar.TypeReg && strings.HasPrefix(header.Name, prefix) {
+			weightsFound = true
+
 			// Remove the prefix from the path
 			newPath := strings.TrimPrefix(header.Name, prefix)
 			header.Name = newPath
-		}
 
-		err = tw.WriteHeader(header)
-		if err != nil {
-			return err
-		}
+			fmt.Fprintln(os.Stderr, header.Name)
 
-		_, err = io.Copy(tw, tr)
-		if err != nil {
-			return err
+			err = tw.WriteHeader(header)
+			if err != nil {
+				return weightsFound, err
+			}
+
+			_, err = io.Copy(tw, tr)
+			if err != nil {
+				return weightsFound, err
+			}
 		}
 	}
-	return nil
+	return weightsFound, nil
 }
