@@ -52,9 +52,9 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	weightsFound := false
+
 	for _, layer := range layers {
-		// fmt.Println(layer.Command)
-		if strings.HasPrefix(layer.Command, "COPY . /src") {
+		if strings.HasSuffix(layer.Command, " # weights") {
 			l := layer.Raw
 			rc, err := l.Uncompressed()
 			if err != nil {
@@ -71,8 +71,7 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, layer := range layers {
-		fmt.Println(layer.Command)
-		if strings.HasSuffix(layer.Command, " # weights") {
+		if strings.HasPrefix(layer.Command, "COPY . /src") {
 			l := layer.Raw
 			rc, err := l.Uncompressed()
 			if err != nil {
@@ -93,5 +92,4 @@ func extractCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-
 }
