@@ -14,6 +14,7 @@ func NewRootCommand() (*cobra.Command, error) {
 
 	rootCmd.AddCommand(
 		newAffixCommand(),
+		newUncompressCommand(),
 		newLayerCommand(),
 		newExtractCommand(),
 		newRemixCommand(),
