@@ -76,14 +76,44 @@ func uncompress(base v1.Image) (v1.Image, error) {
 
 	startUncompressing := time.Now()
 
+	// we want nonEmptyHistory to be the v1.History entries that are not EmptyLayer
+	// it should have the same indexes as layers
+	nonEmptyHistory := make([]v1.History, 0, len(layers))
+	for _, h := range ocf.History {
+		if !h.EmptyLayer {
+			nonEmptyHistory = append(nonEmptyHistory, h)
+		}
+	}
+	if len(nonEmptyHistory) != len(layers) {
+		return nil, fmt.Errorf("number of non-empty history entries (%d) is different from number of layers (%d)", len(nonEmptyHistory), len(layers))
+	}
+
 	var historyIdx, addendumIdx int
 	for layerIdx := 0; layerIdx < len(layers); addendumIdx, layerIdx = addendumIdx+1, layerIdx+1 {
 		startLayer := time.Now()
+		compressedSize, err := layers[layerIdx].Size()
+		if err != nil {
+			return nil, fmt.Errorf("getting compressed size: %w", err)
+		}
+		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, compressedSize, "created by", nonEmptyHistory[layerIdx].CreatedBy, "with size")
 		newLayer, err := uncompressedLayer(layers[layerIdx])
 		if err != nil {
 			return nil, fmt.Errorf("setting uncompressed layer: %w", err)
 		}
-		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, "took", time.Since(startLayer))
+		// truncate time to 3 decimal places
+		truncTime := time.Duration(int64(time.Since(startLayer).Seconds()*1000)) * time.Millisecond
+		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, "took", truncTime)
+		// uncompressedSize, err := newLayer.Size()
+		if err != nil {
+			return nil, fmt.Errorf("getting uncompressed size: %w", err)
+		}
+		// compressionRatio := int(float64(compressedSize)/float64(uncompressedSize)*100) / 100.0
+		// fmt.Fprintln(os.Stderr,
+		// 	"compression ratio for layer",
+		// 	layerIdx,
+		// 	"is", compressionRatio, "(", compressedSize, "/", uncompressedSize,
+		// 	"created by", nonEmptyHistory[layerIdx].CreatedBy, ")",
+		// )
 
 		// try to search for the history entry that corresponds to this layer
 		for ; historyIdx < len(ocf.History); historyIdx++ {
@@ -141,13 +171,39 @@ func uncompress(base v1.Image) (v1.Image, error) {
 	return mutate.ConfigFile(newImage, cfg)
 }
 
+func getSize(layer v1.Layer) int64 {
+	size, err := layer.Size()
+	if err != nil {
+		panic(err)
+	}
+	return size
+}
+
 func uncompressedLayer(layer v1.Layer) (v1.Layer, error) {
-	newLayer, err := tarball.LayerFromOpener(layer.Compressed,
+	uncompLayer, err := tarball.LayerFromOpener(layer.Uncompressed,
 		tarball.WithCompression(compression.None),
 		tarball.WithMediaType(types.DockerUncompressedLayer),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating new layer: %w", err)
 	}
-	return newLayer, nil
+	zstdLayer, err := tarball.LayerFromOpener(uncompLayer.Uncompressed,
+		tarball.WithCompression(compression.ZStd),
+		tarball.WithMediaType(types.OCILayer),
+		// compression levels:
+		// https://github.com/klauspost/compress/blob/master/zstd/encoder_options.go#L196
+		// zstd technically goes up to 22 though
+		tarball.WithCompressionLevel(11),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating new layer: %w", err)
+	}
+	prevRatio := float64(getSize(layer)) / float64(getSize(uncompLayer))
+	compRatio := float64(getSize(zstdLayer)) / float64(getSize(uncompLayer))
+	fmt.Fprintln(os.Stderr, "compression ratio for layer is", compRatio, "(", prevRatio, "->", compRatio, ")")
+	if compRatio < 0.9 {
+		fmt.Fprintln(os.Stderr, "using zstd compression")
+		return zstdLayer, nil
+	}
+	return uncompLayer, nil
 }
