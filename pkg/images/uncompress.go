@@ -189,7 +189,7 @@ func uncompressedLayer(layer v1.Layer) (v1.Layer, error) {
 	}
 	zstdLayer, err := tarball.LayerFromOpener(uncompLayer.Uncompressed,
 		tarball.WithCompression(compression.ZStd),
-		tarball.WithMediaType(types.OCILayer),
+		tarball.WithMediaType(types.OCILayerZStd),
 		// compression levels:
 		// https://github.com/klauspost/compress/blob/master/zstd/encoder_options.go#L196
 		// zstd technically goes up to 22 though
