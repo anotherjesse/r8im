@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -14,6 +15,68 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
+
+type uncompressedLayer struct {
+	wrapped v1.Layer
+	digest  v1.Hash
+	size    int64
+}
+
+var _ v1.Layer = &uncompressedLayer{}
+
+// Digest implements Layer.Digest()
+func (u *uncompressedLayer) Digest() (v1.Hash, error) {
+	return u.digest, nil
+}
+
+// DiffID returns the Hash of the uncompressed layer.
+func (u *uncompressedLayer) DiffID() (v1.Hash, error) {
+	return u.wrapped.DiffID()
+}
+
+// Compressed returns an io.ReadCloser for the compressed layer contents.
+func (u *uncompressedLayer) Compressed() (io.ReadCloser, error) {
+	// this is the trick. we return Uncompressed() because there is no compression
+	return u.wrapped.Uncompressed()
+}
+
+// Uncompressed returns an io.ReadCloser for the uncompressed layer contents.
+func (u *uncompressedLayer) Uncompressed() (io.ReadCloser, error) {
+	return u.wrapped.Uncompressed()
+}
+
+// Size returns the compressed size of the Layer.
+func (u *uncompressedLayer) Size() (int64, error) {
+	return u.size, nil
+}
+
+// MediaType returns the media type of the Layer.
+func (_ *uncompressedLayer) MediaType() (types.MediaType, error) {
+	return types.DockerUncompressedLayer, nil
+}
+
+func newUncompressedLayer(orig v1.Layer) (v1.Layer, error) {
+	layer := &uncompressedLayer{
+		wrapped: orig,
+	}
+
+	var err error
+	if layer.digest, layer.size, err = computeDigest(orig.Uncompressed); err != nil {
+		return nil, err
+	}
+
+	return layer, nil
+}
+
+func computeDigest(opener tarball.Opener) (v1.Hash, int64, error) {
+	rc, err := opener()
+	if err != nil {
+		return v1.Hash{}, 0, err
+	}
+	defer rc.Close()
+
+	return v1.SHA256(rc)
+}
 
 func max(a, b int) int {
 	if a > b {
@@ -96,7 +159,7 @@ func uncompress(base v1.Image) (v1.Image, error) {
 			return nil, fmt.Errorf("getting compressed size: %w", err)
 		}
 		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, compressedSize, "created by", nonEmptyHistory[layerIdx].CreatedBy, "with size")
-		newLayer, err := uncompressedLayer(layers[layerIdx])
+		newLayer, err := decompressLayer(layers[layerIdx])
 		if err != nil {
 			return nil, fmt.Errorf("setting uncompressed layer: %w", err)
 		}
@@ -179,11 +242,8 @@ func getSize(layer v1.Layer) int64 {
 	return size
 }
 
-func uncompressedLayer(layer v1.Layer) (v1.Layer, error) {
-	uncompLayer, err := tarball.LayerFromOpener(layer.Uncompressed,
-		tarball.WithCompression(compression.None),
-		tarball.WithMediaType(types.DockerUncompressedLayer),
-	)
+func decompressLayer(layer v1.Layer) (v1.Layer, error) {
+	uncompLayer, err := newUncompressedLayer(layer)
 	if err != nil {
 		return nil, fmt.Errorf("creating new layer: %w", err)
 	}
