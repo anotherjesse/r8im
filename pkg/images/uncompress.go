@@ -247,6 +247,9 @@ func decompressLayer(layer v1.Layer) (v1.Layer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating new layer: %w", err)
 	}
+	if os.Getenv("NO_COMPRESSION") != "" {
+		return uncompLayer, nil
+	}
 	zstdLayer, err := tarball.LayerFromOpener(uncompLayer.Uncompressed,
 		tarball.WithCompression(compression.ZStd),
 		tarball.WithMediaType(types.OCILayerZStd),
