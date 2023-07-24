@@ -1,4 +1,80 @@
-# r8im affix
+# r8im
+
+This is a suite of assorted tools for inspecting and manipulating docker and OCI images.
+
+## Configuration
+
+Many subcommands take some or all of the following options:
+
+ - `-t`, `--token`: replicate cog token for pushing to `r8.im`. Can also be specified as `COG_TOKEN` environment variable.
+ - `-r`, `--registry`: image registry to push to (by default, `r8.im`).
+ - `-h`, `--help`: get help for subcommand
+
+## affix
+
+Add a new layer to an existing image, without changing any of the existing layers.
+
+```
+r8im affix --base <base-image> --dest <destination-image> --tar <layer-tar-file>
+```
+
+## extract
+
+Extract weights from an image.
+
+```
+r8im extract <image> [--output file]
+```
+
+If `--output` is unspecified, weights are emitted to stdout.
+
+Image layers are detected by searching any layer whose command ends
+with ` # weights` or starts with `COPY . /src`, and within those
+layers looking for appropriate files in `src/weights`.
+
+## layers
+
+Summarize layers of an image.
+
+```
+r8im layers <image>
+```
+
+## remix
+
+Remix layers of an existing image. Takes one model image, and extracts
+weights from a second image, combining them together into a new image.
+
+```
+r8im remix --base <image-including-tag> --weights <image-including-tag> --dest <image-dest>
+```
+
+## zstd
+
+Recompress the layers of an image using zstd.
+
+Examples
+--------
+
+Here are some examples of how to use the tool:
+
+* To report the layers of an image, run:
+```
+$ r8im report my-image
+```
+This will output the layers of the specified image, along with their sizes and hashes.
+
+* To recompress an image using zstd, run:
+```
+$ r8im recompress my-image
+```
+This will recompress the specified image using zstd, which can reduce the size of the image.
+
+* To add a new layer to an image, run:
+```
+$ r8im add-layer my-image layer
+```
+
 
 - doesn't require or use docker / containers
 - works with image registry directly
