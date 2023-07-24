@@ -11,13 +11,13 @@ import (
 	"github.com/anotherjesse/r8im/pkg/images"
 )
 
-func newUncompressCommand() *cobra.Command {
+func newZstdCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "uncompress <image> <dest>",
-		Short:  "uncompress layers of an existing image, pushing result to dest",
+		Use:    "zstd <image> <dest>",
+		Short:  "recompress layers of an existing image using zstd, pushing result to dest",
 		Hidden: false,
 
-		RunE: uncompressCommmand,
+		RunE: zstdCommmand,
 		Args: cobra.ExactArgs(2),
 	}
 
@@ -26,7 +26,7 @@ func newUncompressCommand() *cobra.Command {
 	return cmd
 }
 
-func uncompressCommmand(cmd *cobra.Command, args []string) error {
+func zstdCommmand(cmd *cobra.Command, args []string) error {
 	if sToken == "" {
 		sToken = os.Getenv("COG_TOKEN")
 	}
@@ -45,7 +45,7 @@ func uncompressCommmand(cmd *cobra.Command, args []string) error {
 	imageName := args[0]
 	dest := args[1]
 
-	digest, err := images.Uncompress(imageName, dest, auth)
+	digest, err := images.Zstd(imageName, dest, auth)
 	if err != nil {
 		return err
 	}

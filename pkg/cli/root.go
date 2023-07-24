@@ -18,10 +18,10 @@ func NewRootCommand() (*cobra.Command, error) {
 
 	rootCmd.AddCommand(
 		newAffixCommand(),
-		newUncompressCommand(),
 		newLayerCommand(),
 		newExtractCommand(),
 		newRemixCommand(),
+		newZstdCommand(),
 	)
 	logs.Warn = log.New(os.Stderr, "gcr WARN: ", log.LstdFlags)
 	logs.Progress = log.New(os.Stderr, "gcr: ", log.LstdFlags)

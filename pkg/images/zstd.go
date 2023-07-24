@@ -85,7 +85,7 @@ func max(a, b int) int {
 	return b
 }
 
-func Uncompress(imageName string, dest string, auth authn.Authenticator) (string, error) {
+func Zstd(imageName string, dest string, auth authn.Authenticator) (string, error) {
 	var base v1.Image
 	var err error
 
@@ -98,7 +98,7 @@ func Uncompress(imageName string, dest string, auth authn.Authenticator) (string
 	}
 	fmt.Fprintln(os.Stderr, "pulling took", time.Since(start))
 
-	img, err := uncompress(base)
+	img, err := zstd(base)
 	if err != nil {
 		return "", err
 	}
@@ -120,7 +120,7 @@ func Uncompress(imageName string, dest string, auth authn.Authenticator) (string
 	return image_id, nil
 }
 
-func uncompress(base v1.Image) (v1.Image, error) {
+func zstd(base v1.Image) (v1.Image, error) {
 
 	// inspired by https://github.com/google/go-containerregistry/blob/v0.15.2/pkg/v1/mutate/mutate.go#L371
 	newImage := empty.Image
@@ -137,7 +137,7 @@ func uncompress(base v1.Image) (v1.Image, error) {
 
 	addendums := make([]mutate.Addendum, max(len(ocf.History), len(layers)))
 
-	startUncompressing := time.Now()
+	startRecompressing := time.Now()
 
 	// we want nonEmptyHistory to be the v1.History entries that are not EmptyLayer
 	// it should have the same indexes as layers
@@ -158,17 +158,17 @@ func uncompress(base v1.Image) (v1.Image, error) {
 		if err != nil {
 			return nil, fmt.Errorf("getting compressed size: %w", err)
 		}
-		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, compressedSize, "created by", nonEmptyHistory[layerIdx].CreatedBy, "with size")
-		newLayer, err := decompressLayer(layers[layerIdx])
+		fmt.Fprintln(os.Stderr, "recompressing layer", layerIdx, compressedSize, "created by", nonEmptyHistory[layerIdx].CreatedBy, "with size")
+		newLayer, err := recompressLayer(layers[layerIdx])
 		if err != nil {
-			return nil, fmt.Errorf("setting uncompressed layer: %w", err)
+			return nil, fmt.Errorf("setting recompressed layer: %w", err)
 		}
 		// truncate time to 3 decimal places
 		truncTime := time.Duration(int64(time.Since(startLayer).Seconds()*1000)) * time.Millisecond
-		fmt.Fprintln(os.Stderr, "uncompressing layer", layerIdx, "took", truncTime)
+		fmt.Fprintln(os.Stderr, "recompressing layer", layerIdx, "took", truncTime)
 		// uncompressedSize, err := newLayer.Size()
 		if err != nil {
-			return nil, fmt.Errorf("getting uncompressed size: %w", err)
+			return nil, fmt.Errorf("getting recompressed size: %w", err)
 		}
 		// compressionRatio := int(float64(compressedSize)/float64(uncompressedSize)*100) / 100.0
 		// fmt.Fprintln(os.Stderr,
@@ -193,7 +193,7 @@ func uncompress(base v1.Image) (v1.Image, error) {
 		}
 		addendums[addendumIdx].Layer = newLayer
 	}
-	fmt.Fprintln(os.Stderr, "total uncompressing took", time.Since(startUncompressing))
+	fmt.Fprintln(os.Stderr, "total recompressing took", time.Since(startRecompressing))
 
 	// add all leftover History entries
 	for ; historyIdx < len(ocf.History); historyIdx, addendumIdx = historyIdx+1, addendumIdx+1 {
@@ -242,7 +242,7 @@ func getSize(layer v1.Layer) int64 {
 	return size
 }
 
-func decompressLayer(layer v1.Layer) (v1.Layer, error) {
+func recompressLayer(layer v1.Layer) (v1.Layer, error) {
 	uncompLayer, err := newUncompressedLayer(layer)
 	if err != nil {
 		return nil, fmt.Errorf("creating new layer: %w", err)
@@ -265,7 +265,7 @@ func decompressLayer(layer v1.Layer) (v1.Layer, error) {
 	compRatio := float64(getSize(zstdLayer)) / float64(getSize(uncompLayer))
 	fmt.Fprintln(os.Stderr, "compression ratio for layer is", compRatio, "(", prevRatio, "->", compRatio, ")")
 	if compRatio < 0.9 {
-		fmt.Fprintln(os.Stderr, "using zstd compression")
+		fmt.Fprintln(os.Stderr, "recompressing using zstd compression")
 		return zstdLayer, nil
 	}
 	return uncompLayer, nil
