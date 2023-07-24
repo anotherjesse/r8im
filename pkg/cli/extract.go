@@ -15,7 +15,7 @@ import (
 
 func newExtractCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "extract [image] (dest or stdout)",
+		Use:    "extract <image> [--output file]",
 		Short:  "extract weights from image",
 		Hidden: false,
 
