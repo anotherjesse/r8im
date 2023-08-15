@@ -17,8 +17,8 @@ var (
 
 func newRemixCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "remix",
-		Short:  "remix existing layers of an existing image",
+		Use:    "remix --base <image-including-tag> --weights <image-including-tag> --dest <image-dest>",
+		Short:  "remix layers of an existing image",
 		Hidden: false,
 
 		RunE: remixCommmand,
