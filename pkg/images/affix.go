@@ -32,15 +32,30 @@ func Affix(baseRef string, dest string, newLayer string, auth authn.Authenticato
 
 	// --- adding new layer ontop of existing image
 
-	fmt.Fprintln(os.Stderr, "appending as new layer", newLayer)
+	var img v1.Image
 
-	start = time.Now()
-	img, err := appendLayer(base, newLayer)
-	if err != nil {
-		return "", fmt.Errorf("appending %v: %w", newLayer, err)
+	if newLayer != "" {
+		fmt.Fprintln(os.Stderr, "appending as new layer", newLayer)
+
+		start = time.Now()
+		img, err = appendLayer(base, newLayer)
+		if err != nil {
+			return "", fmt.Errorf("appending %v: %w", newLayer, err)
+		}
+		fmt.Fprintln(os.Stderr, "appending took", time.Since(start))
+	} else {
+		cfg, err := base.ConfigFile()
+		if err != nil {
+			return "", fmt.Errorf("getting config file: %w", err)
+		}
+
+		cfg.Config.Labels["cloned"] = "true"
+
+		img, err = mutate.ConfigFile(base, cfg)
+		if err != nil {
+			return "", fmt.Errorf("mutating config file: %w", err)
+		}
 	}
-	fmt.Fprintln(os.Stderr, "appending took", time.Since(start))
-
 	// --- pushing image
 
 	start = time.Now()
