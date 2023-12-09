@@ -55,23 +55,24 @@ func sizeCommand(cmd *cobra.Command, args []string) error {
 
 	for _, image := range all_images {
 		imageSize := 0
+		imageUniqSize := 0
 		layers, err := images.Layers(image, auth)
 		if err != nil {
 			return err
 		}
 
 		for _, layer := range layers {
+			imageSize += int(layer.Size)
 			if _, ok := uniqLayers[layer.Digest]; ok {
 				continue
 			}
 			uniqLayers[layer.Digest] = layer.Size
-			imageSize += int(layer.Size)
+			imageUniqSize += int(layer.Size)
 		}
 
-		size := humanize.Bytes(uint64(imageSize))
-		totalSize += imageSize
+		totalSize += imageUniqSize
 		version := strings.Split(image, "@sha256:")[1]
-		fmt.Printf("%s\t%s\n", version, size)
+		fmt.Printf("%s\t%s\t%s\n", version, humanize.Bytes(uint64(imageSize)), humanize.Bytes(uint64(imageUniqSize)))
 	}
 
 	fmt.Printf("Total Size: %s\n", humanize.Bytes(uint64(totalSize)))
