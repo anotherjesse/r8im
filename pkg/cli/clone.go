@@ -11,28 +11,27 @@ import (
 	"github.com/anotherjesse/r8im/pkg/images"
 )
 
-func newUncompressCommand() *cobra.Command {
+func newCloneCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "uncompress <image> <dest>",
-		Short:  "uncompress layers of an existing image, pushing result to dest",
+		Use:    "clone",
+		Short:  "copy existing image to a new image",
 		Hidden: false,
-
-		RunE: uncompressCommmand,
-		Args: cobra.ExactArgs(2),
+		RunE:   cloneCommmand,
 	}
 
 	cmd.Flags().StringVarP(&sToken, "token", "t", "", "replicate cog token")
+	cmd.Flags().StringVarP(&sRegistry, "registry", "r", "r8.im", "registry host")
+	cmd.Flags().StringVarP(&baseRef, "base", "b", "", "base image reference - include tag: r8.im/username/modelname@sha256:hexdigest")
+	cmd.MarkFlagRequired("base")
+	cmd.Flags().StringVarP(&dest, "dest", "d", "", "destination image reference: r8.im/username/modelname")
+	cmd.MarkFlagRequired("dest")
 
 	return cmd
 }
 
-func uncompressCommmand(cmd *cobra.Command, args []string) error {
+func cloneCommmand(cmd *cobra.Command, args []string) error {
 	if sToken == "" {
 		sToken = os.Getenv("COG_TOKEN")
-	}
-
-	if len(args) == 0 {
-		return nil
 	}
 
 	u, err := auth.VerifyCogToken(sRegistry, sToken)
@@ -42,15 +41,12 @@ func uncompressCommmand(cmd *cobra.Command, args []string) error {
 	}
 	auth := authn.FromConfig(authn.AuthConfig{Username: u, Password: sToken})
 
-	imageName := args[0]
-	dest := args[1]
-
-	digest, err := images.Uncompress(imageName, dest, auth)
+	image_id, err := images.Affix(baseRef, dest, "", auth)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(digest)
+	fmt.Println(image_id)
 
 	return nil
 }
